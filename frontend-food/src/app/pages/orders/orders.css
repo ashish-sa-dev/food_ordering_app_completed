@@ -1,0 +1,35 @@
+/* orders.css */
+:host {
+    display: block;
+  }
+  
+  /* Animation for loading spinner */
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  /* Smooth transitions */
+  .bg-white {
+    transition: all 0.3s ease;
+  }
+  
+  .bg-white:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    :host .px-4 {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    
+    :host .px-6 {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }

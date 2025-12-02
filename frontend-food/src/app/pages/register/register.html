@@ -1,0 +1,148 @@
+<div class="min-h-screen bg-[#F5EDE6] flex items-center justify-center p-4">
+  <div class="w-full max-w-2xl bg-white rounded-2xl p-8 shadow-lg">
+    <h2 class="text-2xl font-bold text-center mb-6 text-[#3E2F2A]">
+      Create an Account
+    </h2>
+
+    <form class="space-y-4" [formGroup]="userForm" (ngSubmit)="onRegister()">
+      <!-- Full Name -->
+      <div>
+        <label class="block mb-1 text-[#3E2F2A]">Full Name *</label>
+        <input 
+          formControlName="fullname"
+          type="text" 
+          class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
+          placeholder="Enter your full name"
+        />
+        @if (userForm.get('fullname')?.invalid && userForm.get('fullname')?.touched) {
+          <p class="text-red-500 text-sm mt-1">Full name is required</p>
+        }
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label class="block mb-1 text-[#3E2F2A]">Email *</label>
+        <input 
+          formControlName="email"
+          type="email" 
+          class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
+          placeholder="Enter your email"
+        />
+        @if (userForm.get('email')?.invalid && userForm.get('email')?.touched) {
+          <p class="text-red-500 text-sm mt-1">Valid email is required</p>
+        }
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label class="block mb-1 text-[#3E2F2A]">Password *</label>
+        <input 
+          formControlName="password"
+          type="password"
+          class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
+          placeholder="Enter your password (minimum 6 characters)"
+        />
+        @if (userForm.get('password')?.invalid && userForm.get('password')?.touched) {
+          <p class="text-red-500 text-sm mt-1">Minimum 6 characters required</p>
+        }
+      </div>
+
+      <!-- Address Section -->
+      <div class="border-t pt-6 mt-6">
+        <h3 class="text-lg font-semibold text-[#3E2F2A] mb-4">Address Information *</h3>
+        
+        <!-- Street -->
+        <div class="mb-4">
+          <label class="block mb-1 text-[#3E2F2A]">Street Address</label>
+          <input 
+            formControlName="street"
+            type="text" 
+            class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
+            placeholder="Enter your street address"
+          />
+          @if (userForm.get('street')?.invalid && userForm.get('street')?.touched) {
+            <p class="text-red-500 text-sm mt-1">Street address is required</p>
+          }
+        </div>
+
+        <!-- City, State, Pincode Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- City -->
+          <div>
+            <label class="block mb-1 text-[#3E2F2A]">City</label>
+            <input 
+              formControlName="city"
+              type="text" 
+              class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
+              placeholder="City"
+            />
+            @if (userForm.get('city')?.invalid && userForm.get('city')?.touched) {
+              <p class="text-red-500 text-sm mt-1">City is required</p>
+            }
+          </div>
+
+          <!-- State -->
+          <div>
+            <label class="block mb-1 text-[#3E2F2A]">State</label>
+            <select 
+              formControlName="state"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21] bg-white"
+            >
+              <option value="">Select State</option>
+              <option value="Gujarat">Gujarat</option>
+              <option value="Maharashtra">Maharashtra</option>
+              <option value="Rajasthan">Rajasthan</option>
+              <option value="Delhi">Delhi</option>
+              <option value="Karnataka">Karnataka</option>
+              <option value="Tamil Nadu">Tamil Nadu</option>
+              <option value="Uttar Pradesh">Uttar Pradesh</option>
+              <option value="West Bengal">West Bengal</option>
+            </select>
+            @if (userForm.get('state')?.invalid && userForm.get('state')?.touched) {
+              <p class="text-red-500 text-sm mt-1">State is required</p>
+            }
+          </div>
+
+          <!-- Pincode -->
+          <div>
+            <label class="block mb-1 text-[#3E2F2A]">Pincode</label>
+            <input 
+              formControlName="pincode"
+              type="text" 
+              class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
+              placeholder="Pincode"
+              maxlength="6"
+            />
+            @if (userForm.get('pincode')?.invalid && userForm.get('pincode')?.touched) {
+              <p class="text-red-500 text-sm mt-1">Valid 6-digit pincode required</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Register Button -->
+      <button 
+        type="submit"
+        [disabled]="isLoading || userForm.invalid"
+        class="w-full bg-[#9E2A21] hover:bg-[#8a241d] text-white p-3 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+      >
+        @if (isLoading) {
+          <span class="flex items-center justify-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Registering...
+          </span>
+        } @else {
+          Register
+        }
+      </button>
+    </form>
+
+    <p class="text-center mt-4 text-[#3E2F2A]">
+      Already have an account?
+      <a routerLink="/login" class="text-[#9E2A21] font-semibold">Login</a>
+    </p>
+  </div>
+</div>

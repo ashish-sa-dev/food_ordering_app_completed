@@ -1,0 +1,114 @@
+<div class="max-w-2xl mx-auto p-6">
+
+  <h1 class="text-3xl font-bold mb-6">Checkout</h1>
+
+  @if (checkoutData) {
+
+    <!-- Delivery Address Selection -->
+    <div class="bg-white p-5 rounded-xl shadow mb-6">
+      <h2 class="text-xl font-semibold mb-4">Delivery Address</h2>
+
+      @if (userAddresses.length > 0) {
+        <div class="space-y-3">
+          @for (address of userAddresses; track $index) {
+            <div 
+              class="border rounded-lg p-4 cursor-pointer transition-all"
+              [class.border-blue-500]="selectedAddress === address"
+              [class.bg-blue-50]="selectedAddress === address"
+              (click)="selectAddress(address)">
+              <div class="flex items-start">
+                <input
+                  type="radio"
+                  name="address"
+                  [checked]="selectedAddress === address"
+                  class="mt-1 mr-3"
+                  (change)="selectAddress(address)">
+                <div>
+                  <p class="font-medium">{{ address.street }}</p>
+                  <p class="text-gray-600">{{ address.city }}, {{ address.state }} - {{ address.pincode }}</p>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="text-gray-500 text-center py-4">No addresses saved. Please add an address in your profile.</p>
+        <button 
+          class="w-full bg-gray-100 hover:bg-gray-200 py-2 rounded-lg">
+          Add Address 
+        </button>
+      }
+    </div>
+
+    <!-- Payment Method Selection -->
+    <div class="bg-white p-5 rounded-xl shadow mb-6">
+      <h2 class="text-xl font-semibold mb-4">Payment Method</h2>
+      
+      <div class="space-y-3">
+        <div class="flex items-center border rounded-lg p-4">
+          <input
+            type="radio"
+            id="online"
+            name="paymentMethod"
+            value="online"
+            [(ngModel)]="paymentMethod"
+            class="mr-3">
+          <label for="online" class="flex-1 cursor-pointer">
+            <span class="font-medium">Online Payment</span>
+            <p class="text-sm text-gray-600 mt-1">Pay securely with your credit/debit card or UPI</p>
+          </label>
+        </div>
+
+        <div class="flex items-center border rounded-lg p-4">
+          <input
+            type="radio"
+            id="cod"
+            name="paymentMethod"
+            value="cod"
+            [(ngModel)]="paymentMethod"
+            class="mr-3">
+          <label for="cod" class="flex-1 cursor-pointer">
+            <span class="font-medium">Cash on Delivery</span>
+            <p class="text-sm text-gray-600 mt-1">Pay in cash when your order is delivered</p>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Summary -->
+    <div class="bg-white p-5 rounded-xl shadow mb-6">
+      <h2 class="text-xl font-semibold mb-3">Order Summary</h2>
+
+      @for (item of checkoutData.items; track item.menuItem) {
+        <div class="flex justify-between py-2 border-b">
+          <span>{{ item.menuItem }} × {{ item.quantity }}</span>
+          <span>₹{{ item.price * item.quantity }}</span>
+        </div>
+      }
+
+      <div class="flex justify-between text-xl font-bold mt-4">
+        <span>Total:</span>
+        <span>₹{{ checkoutData.total }}</span>
+      </div>
+    </div>
+
+    <!-- Confirm Order Button -->
+    <button
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-lg font-semibold transition-colors"
+      (click)="placeOrder()"
+      [disabled]="!selectedAddress">
+      {{ paymentMethod === 'online' ? 'Proceed to Payment' : 'Confirm Order' }}
+    </button>
+
+  } @else {
+    <div class="text-center py-8">
+      <p class="text-gray-500">No items in cart</p>
+      <button 
+        class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg"
+        (click)="router.navigate(['/'])">
+        Continue Shopping
+      </button>
+    </div>
+  }
+
+</div>
