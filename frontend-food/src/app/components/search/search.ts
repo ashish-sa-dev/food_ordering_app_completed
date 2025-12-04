@@ -9,19 +9,18 @@ import { RestaurantService } from '../../services/restaurant.service';
   styleUrl: './search.css',
 })
 export class Search {
-
   private restaurantService = inject(RestaurantService);
   searchText: string = '';
 
-  @Output() searchedRestaurant = new EventEmitter<any[]| null>();
+  @Output() searchedRestaurant = new EventEmitter<any[] | null>();
 
   onSearch() {
-  if (!this.searchText.trim()) {
-    this.searchedRestaurant.emit(null); // send empty event
-    return;
+    if (!this.searchText.trim()) {
+      this.searchedRestaurant.emit(null); // send empty event
+      return;
+    }
+    this.restaurantService.searchRestaurants(this.searchText).subscribe((res: any) => {
+      this.searchedRestaurant.emit(res);
+    });
   }
- this.restaurantService.searchRestaurants(this.searchText).subscribe((res: any) => {
-    this.searchedRestaurant.emit(res);
-  });
-}
 }

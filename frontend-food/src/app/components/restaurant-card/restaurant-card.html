@@ -1,25 +1,26 @@
 <h1 class="text-2xl font-semibold px-6 mt-4">
- {{title}}
+  {{ title }}
 </h1>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-6">
-
-  @for (res of restaurants; track res._id) {  
-
+  @for (res of restaurants; track res._id) {
     <div
       class="bg-white shadow-md hover:shadow-xl transition-all duration-200 rounded-2xl overflow-hidden cursor-pointer"
       [routerLink]="['/restaurant', res._id]"
-      >
+    >
       <!-- Restaurant Image -->
       <img
         class="w-full h-40 object-cover"
-        [src]="res?.image ? 'http://localhost:5000/img/restaurant/' + res.image : 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?auto=format&fit=crop&w=800&q=60'"
-        alt="{{res?.name || 'Restaurant'}}" 
+        [src]="
+          res?.image
+            ? 'http://localhost:5000/img/restaurant/' + res.image
+            : 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?auto=format&fit=crop&w=800&q=60'
+        "
+        alt="{{ res?.name || 'Restaurant' }}"
       />
 
       <!-- Content Area -->
       <div class="p-4">
-
         <!-- Restaurant Name -->
         <h2 class="text-lg font-semibold text-gray-800">
           {{ res.name }}
@@ -31,9 +32,7 @@
         </p>
 
         <!-- Address -->
-        <p class="text-sm text-gray-600 mt-1">
-          {{ res.address.street }}, {{ res.address.city }}
-        </p>
+        <p class="text-sm text-gray-600 mt-1">{{ res.address.street }}, {{ res.address.city }}</p>
 
         <!-- Open/Closed Status -->
         <p
@@ -41,17 +40,14 @@
           [class.text-green-600]="res.isOpen"
           [class.text-red-600]="!res.isOpen"
         >
-          {{ res.isOpen ? "Open Now" : "Closed" }}
+          {{ res.isOpen ? 'Open Now' : 'Closed' }}
         </p>
 
         <!-- Description -->
         <p class="text-sm text-gray-700 mt-2 line-clamp-2">
           {{ res.description }}
         </p>
-
       </div>
     </div>
-
   }
-
 </div>

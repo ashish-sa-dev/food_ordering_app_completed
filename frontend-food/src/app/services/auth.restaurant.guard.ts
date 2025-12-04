@@ -1,24 +1,30 @@
-// auth.guard.ts
-import { Injectable } from '@angular/core';
+// auth.restaurant.guard.ts
+import { Injectable, inject } from '@angular/core';
 import { Router, CanActivate } from '@angular/router';
 import { AuthService } from './auth.restaurant.service';
+import { LoggerService } from '../core/services/logger.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthGuard implements CanActivate {
-  
+  private logger = inject(LoggerService);
+
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
   ) {}
 
   canActivate(): boolean {
-    if (this.authService.isAuthenticated) {
+    const isAuth = this.authService.isAuthenticated;
+
+    if (isAuth) {
+      this.logger.info('Restaurant route access granted');
       return true;
     }
-    
-    // Redirect to login if not authenticated
+
+    this.logger.warn('Unauthorized restaurant route access — redirecting to login');
+
     this.router.navigate(['/restaurant/login']);
     return false;
   }

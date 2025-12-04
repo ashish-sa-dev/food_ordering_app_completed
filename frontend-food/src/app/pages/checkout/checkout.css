@@ -1,13 +1,13 @@
 /* checkout.css */
 :host {
-    display: block;
-  }
-  
-  input[type="radio"] {
-    accent-color: #2563eb; /* Blue color for radio buttons */
-  }
-  
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  display: block;
+}
+
+input[type='radio'] {
+  accent-color: #2563eb; /* Blue color for radio buttons */
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

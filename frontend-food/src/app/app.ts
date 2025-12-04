@@ -1,17 +1,17 @@
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { Navbar } from "./components/navbar/navbar";
-import { Search } from "./components/search/search";
-import { RestaurantCard } from "./components/restaurant-card/restaurant-card";
-import { RestaurantService } from "./services/restaurant.service";
+import { Navbar } from './components/navbar/navbar';
+import { Search } from './components/search/search';
+import { RestaurantCard } from './components/restaurant-card/restaurant-card';
+import { RestaurantService } from './services/restaurant.service';
 import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, Navbar, Search, RestaurantCard],
   templateUrl: './app.html',
-  styleUrls: ['./app.css']
+  styleUrls: ['./app.css'],
 })
 export class App implements OnInit, OnDestroy {
   authService = inject(AuthService);
@@ -20,26 +20,24 @@ export class App implements OnInit, OnDestroy {
 
   restaurants: any[] = [];
   isSearching = false;
-  title = "Popular Restaurants";
-  
+  title = 'Popular Restaurants';
+
   // User state
   currentUser = signal<any>(null);
 
   constructor(
     protected router: Router,
-    private restaurantService: RestaurantService
+    private restaurantService: RestaurantService,
   ) {}
 
   ngOnInit() {
     // Subscribe to auth state changes
-    this.authSub = this.authService.isLoggedIn$.subscribe(isLogged => {
-      console.log('Auth state changed:', isLogged);
+    this.authSub = this.authService.isLoggedIn$.subscribe((isLogged) => {
       this.loadDefaultRestaurants(isLogged);
     });
 
     // Subscribe to user data changes
-    this.userSub = this.authService.currentUser$.subscribe(user => {
-      console.log('User data changed:', user);
+    this.userSub = this.authService.currentUser$.subscribe((user) => {
       this.currentUser.set(user);
     });
 
@@ -49,21 +47,17 @@ export class App implements OnInit, OnDestroy {
 
   // Load Nearby / Popular based on login
   loadDefaultRestaurants(isLoggedIn: boolean) {
-    console.log("Loading restaurants for:", isLoggedIn ? 'Logged in' : 'Not logged in');
-    
     if (isLoggedIn) {
       this.restaurantService.getNearby().subscribe({
         next: (res: any) => {
-          console.log("Nearby restaurants:", res);
           this.restaurants = res.data || [];
           this.isSearching = false;
-          this.title = "Nearby Restaurants";
+          this.title = 'Nearby Restaurants';
         },
         error: (err) => {
-          console.error('Error loading nearby restaurants:', err);
           // Fallback to popular if nearby fails
           this.loadPopularRestaurants();
-        }
+        },
       });
     } else {
       this.loadPopularRestaurants();
@@ -75,12 +69,11 @@ export class App implements OnInit, OnDestroy {
       next: (res: any) => {
         this.restaurants = res.data || [];
         this.isSearching = false;
-        this.title = "Popular Restaurants";
+        this.title = 'Popular Restaurants';
       },
       error: (err) => {
-        console.error('Error loading popular restaurants:', err);
         this.restaurants = [];
-      }
+      },
     });
   }
 
@@ -89,14 +82,14 @@ export class App implements OnInit, OnDestroy {
     // If empty search → load default again
     if (!res) {
       this.isSearching = false;
-      console.log("No results, loading default");
+
       this.loadDefaultRestaurants(this.authService.isLoggedIn);
       return;
     }
 
     this.restaurants = res.restaurants || [];
     this.isSearching = true;
-    this.title = "Search Results";
+    this.title = 'Search Results';
   }
 
   // Check if on specific pages (for navbar hiding)
@@ -131,8 +124,11 @@ export class App implements OnInit, OnDestroy {
   isRestaurantLogin() {
     return this.router.url === '/restaurant/dashboard/login';
   }
-  isOrders(){
+  isOrders() {
     return this.router.url === '/orders';
+  }
+  isNotFound() {
+    return this.router.url === '/not-found';
   }
 
   // Logout user

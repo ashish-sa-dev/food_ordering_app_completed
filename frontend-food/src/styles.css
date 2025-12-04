@@ -3,13 +3,12 @@
 @tailwind components;
 @tailwind utilities;
 
-*{
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
-body{
-    padding:3px 25px;
-    background-color: #F5EDE6; 
+body {
+  padding: 3px 25px;
+  background-color: #f5ede6;
 }
-

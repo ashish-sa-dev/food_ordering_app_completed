@@ -20,20 +20,20 @@ export class Navbar implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
   private authSub?: Subscription;
-  
+
   isLoggedIn = false;
   currentUser: User | null = null;
   showUserDropdown = false;
-  
+
   // Navigation links - exact is required
   navLinks: NavLink[] = [
     { path: '/', label: 'Home', exact: true },
-    { path: '/orders', label: 'My Orders', exact: false }
+    { path: '/orders', label: 'My Orders', exact: false },
   ];
 
   ngOnInit() {
     // Subscribe to authentication state changes
-    this.authSub = this.authService.currentUser$.subscribe(user => {
+    this.authSub = this.authService.currentUser$.subscribe((user) => {
       this.isLoggedIn = !!user;
       this.currentUser = user;
     });
