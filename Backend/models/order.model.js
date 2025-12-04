@@ -56,9 +56,8 @@ const orderSchema = new mongoose.Schema(
       enum: ['cod', 'online'],
       default: 'cod',
     },
-
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model('Order', orderSchema);
