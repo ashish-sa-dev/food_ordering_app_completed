@@ -1,53 +1,107 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { AuthService } from './auth.service';
+import { LoggerService } from '../core/services/logger.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UserService {
-  private baseUrl = 'http://localhost:5000/api/v1/user'; // Adjust to your backend
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+  private logger = inject(LoggerService);
 
-  constructor(
-    private http: HttpClient,
-    private authService: AuthService
-  ) {}
+  private baseUrl = 'http://localhost:5000/api/v1/user';
 
-  // Login user
-  loginUser(credentials: {email: string, password: string}): Observable<any> {
-    return this.http.post(`${this.baseUrl}/login`, credentials,{
-      withCredentials:true
-    });
+  // ✅ LOGIN USER
+  loginUser(credentials: { email: string; password: string }): Observable<any> {
+    this.logger.info('Login API called', { email: credentials.email });
+
+    return this.http
+      .post(`${this.baseUrl}/login`, credentials, {
+        withCredentials: true,
+      })
+      .pipe(
+        tap({
+          next: () => {
+            this.logger.info('Login API success', { email: credentials.email });
+          },
+          error: (error) => {
+            this.logger.error('Login API failed', {
+              email: credentials.email,
+              status: error?.status,
+            });
+          },
+        }),
+      );
   }
 
-  // Register user
+  // ✅ REGISTER USER
   registerUser(userData: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/register`, userData,{
-      withCredentials:true
-    });
+    this.logger.info('Register API called', { email: userData?.email });
+
+    return this.http
+      .post(`${this.baseUrl}/register`, userData, {
+        withCredentials: true,
+      })
+      .pipe(
+        tap({
+          next: () => {
+            this.logger.info('Register API success', { email: userData?.email });
+          },
+          error: (error) => {
+            this.logger.error('Register API failed', {
+              email: userData?.email,
+              status: error?.status,
+            });
+          },
+        }),
+      );
   }
 
-  // Get user profile
+  // ✅ GET USER PROFILE
   getProfile(): Observable<any> {
     const token = this.authService.getToken();
+
+    this.logger.info('Profile API called');
+
     const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     });
-    
-    return this.http.get(`${this.baseUrl}/profile`, { headers });
+
+    return this.http.get(`${this.baseUrl}/profile`, { headers }).pipe(
+      tap({
+        next: () => {
+          this.logger.info('Profile API success');
+        },
+        error: (error) => {
+          this.logger.error('Profile API failed', { status: error?.status });
+        },
+      }),
+    );
   }
 
-  // Update user profile
+  // ✅ UPDATE USER PROFILE
   updateProfile(userData: any): Observable<any> {
     const token = this.authService.getToken();
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-    
-    return this.http.patch(`${this.baseUrl}/profile`, userData, { headers });
-  }
 
-  // Add other user-related methods...
+    this.logger.info('Update profile API called');
+
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    });
+
+    return this.http.patch(`${this.baseUrl}/profile`, userData, { headers }).pipe(
+      tap({
+        next: () => {
+          this.logger.info('Update profile API success');
+        },
+        error: (error) => {
+          this.logger.error('Update profile API failed', { status: error?.status });
+        },
+      }),
+    );
+  }
 }

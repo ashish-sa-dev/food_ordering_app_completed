@@ -1,0 +1,97 @@
+<div class="not-found-container">
+  <div class="not-found-content">
+    <!-- Animated 404 Text -->
+    <div class="error-code">
+      <span class="digit">4</span>
+      <span class="digit">0</span>
+      <span class="digit">4</span>
+    </div>
+
+    <!-- Error Message -->
+    <h1 class="error-title">Page Not Found</h1>
+
+    <p class="error-description">
+      Oops! The page you're looking for seems to have wandered off into the digital void.
+    </p>
+
+    <!-- Illustrative Image/SVG -->
+    <div class="error-illustration">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="error-svg">
+        <circle cx="100" cy="100" r="80" fill="#f0f0f0" />
+        <circle cx="80" cy="80" r="10" fill="#333" />
+        <circle cx="120" cy="80" r="10" fill="#333" />
+        <path d="M80 120 Q100 140 120 120" stroke="#333" stroke-width="3" fill="none" />
+        <path d="M60 60 L40 40 M140 60 L160 40" stroke="#ff6b6b" stroke-width="3" />
+      </svg>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="suggestions">
+      <p>Here are some things you can try:</p>
+      <ul class="suggestion-list">
+        <li>Check the URL for typos</li>
+        <li>Go back to the previous page</li>
+        <li>Visit our homepage</li>
+        <li>Contact support if the problem persists</li>
+      </ul>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button routerLink="/" class="btn btn-primary">
+        <i class="icon-home"></i>
+        Go to Homepage
+      </button>
+
+      <button (click)="goBack()" class="btn btn-secondary">
+        <i class="icon-arrow-left"></i>
+        Go Back
+      </button>
+
+      <button (click)="contactSupport()" class="btn btn-outline">
+        <i class="icon-support"></i>
+        Contact Support
+      </button>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+      <p>Or search for what you need:</p>
+      <div class="search-box">
+        <input
+          type="text"
+          placeholder="Search our website..."
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          class="search-input"
+        />
+        <button (click)="onSearch()" class="search-btn">
+          <i class="icon-search"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Additional Info -->
+    <div class="additional-info">
+      <p>
+        <small>
+          If you believe this is an error, please
+          <a href="mailto:support@example.com">email our support team</a>
+          with details.
+        </small>
+      </p>
+      <p class="timestamp">Error occurred at: {{ currentTime | date: 'medium' }}</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="not-found-footer">
+    <p>© {{ currentYear }} Your Company. All rights reserved.</p>
+    <nav>
+      <a routerLink="/">Home</a>
+      <a routerLink="/about">About</a>
+      <a routerLink="/help">Help Center</a>
+      <a routerLink="/sitemap">Sitemap</a>
+    </nav>
+  </div>
+</div>

@@ -1,17 +1,23 @@
 <!-- NAVBAR -->
-@if (!isLoginPage() && !isForgotPasswordPage() && !isRegisterPage() && !isRestaurant() && !isRestaurantDetails() && !isCart() && !isCheckout() && !isRestaurantLogin() && !isOrders()) {
+@if (
+  !isLoginPage() &&
+  !isForgotPasswordPage() &&
+  !isRegisterPage() &&
+  !isRestaurant() &&
+  !isRestaurantDetails() &&
+  !isCart() &&
+  !isCheckout() &&
+  !isRestaurantLogin() &&
+  !isOrders() &&
+  !isNotFound()
+) {
   <app-navbar />
 
   <!-- SEARCH BAR -->
-  <app-search 
-      (searchedRestaurant)="receiveRestaurant($event)">
-  </app-search>
+  <app-search (searchedRestaurant)="receiveRestaurant($event)"> </app-search>
 
   <!-- RESTAURANT CARDS -->
-  <app-restaurant-card 
-      [restaurants]="restaurants"
-      [title]="title">
-  </app-restaurant-card>
+  <app-restaurant-card [restaurants]="restaurants" [title]="title"> </app-restaurant-card>
 }
 
 <!-- ROUTER -->

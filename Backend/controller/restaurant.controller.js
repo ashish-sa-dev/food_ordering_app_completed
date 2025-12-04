@@ -1,21 +1,20 @@
-const Restaurant = require("../models/restaurant.model");
-const MenuItem = require("../models/menuItem.model");
-const Order = require("../models/order.model");
-const { getCoordinates } = require("../utils/geocode");
-const multer = require("multer");
-const mongoose = require("mongoose");
- 
-const sharp = require("sharp");
-const { castObject } = require("../models/user.model");
-
+// controllers/restaurant.controller.js
+const logger = require('../config/logger');
+const Restaurant = require('../models/restaurant.model');
+const MenuItem = require('../models/menuItem.model');
+const Order = require('../models/order.model');
+const { getCoordinates } = require('../utils/geocode');
+const multer = require('multer');
+const mongoose = require('mongoose');
+const sharp = require('sharp');
 
 const multerStorage = multer.memoryStorage();
 
 const multerFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image")) {
+  if (file.mimetype && file.mimetype.startsWith('image')) {
     cb(null, true);
   } else {
-    cb(new Error("Not an image! Please upload only images."), false);
+    cb(new Error('Not an image! Please upload only images.'), false);
   }
 };
 const upload = multer({
@@ -23,62 +22,70 @@ const upload = multer({
   fileFilter: multerFilter,
 });
 
-module.exports.uploadRestaurantImage = upload.single("photo");
+module.exports.uploadRestaurantImage = upload.single('photo');
 
 module.exports.resizeUploadedImage = async (req, res, next) => {
-  if (!req.file) return next();
-  
-  req.file.filename = `restaurant-${req.body.email}-${Date.now()}.jpeg`;
+  try {
+    if (!req.file) return next();
 
-  sharp(req.file.buffer)
-    .resize(500, 500)
-    .toFormat("jpeg")
-    .jpeg({ quality: 90 })
-    .toFile(`public/img/restaurant/${req.file.filename}`);
+    req.file.filename = `restaurant-${req.body.email}-${Date.now()}.jpeg`;
 
-  next();
+    await sharp(req.file.buffer)
+      .resize(500, 500)
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 })
+      .toFile(`public/img/restaurant/${req.file.filename}`);
+
+    next();
+  } catch (err) {
+    logger.error('resizeUploadedImage failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    next(err);
+  }
 };
-module.exports.registerRestaurant = async (req, res) => {
+
+module.exports.registerRestaurant = async (req, res, next) => {
   try {
     const { name, email, password, description, cuisineType, address } = req.body;
-
-    console.log('Received address:', address); // Debug log
-    console.log('Type of address:', typeof address); // Debug log
 
     // Parse address if it's a string (from JSON.stringify)
     let addressObj;
     if (typeof address === 'string') {
       try {
         addressObj = JSON.parse(address);
-      } catch (parseError) {
-        console.error('Error parsing address JSON:', parseError);
-        return res.status(400).json({ message: "Invalid address format" });
+      } catch {
+        logger.warn('registerRestaurant invalid address format', { email });
+        return res.status(400).json({ message: 'Invalid address format' });
       }
     } else {
-      addressObj = address; // If it's already an object
+      addressObj = address;
     }
-
-    console.log('Parsed address object:', addressObj); // Debug log
 
     const existingRestaurant = await Restaurant.findOne({ email });
     if (existingRestaurant) {
-      return res.status(400).json({ message: "Restaurant already exists" });
+      logger.warn('registerRestaurant attempt when already exists', { email });
+      return res.status(400).json({ message: 'Restaurant already exists' });
     }
-    
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Minimum 6 characters required for password" });
+
+    if (!password || password.length < 6) {
+      logger.warn('registerRestaurant weak password', { email });
+      return res.status(400).json({ message: 'Minimum 6 characters required for password' });
     }
-    
+
     const hashedPassword = await Restaurant.hashPassword(password);
 
-    // Use the parsed address object
     const fullAddress = `${addressObj.street}, ${addressObj.city}, ${addressObj.state}, ${addressObj.pincode}`;
-    console.log('Full address for geocoding:', fullAddress);
 
     const coordinates = await getCoordinates(fullAddress);
 
     if (!coordinates) {
-      return res.status(400).json({ message: "Could not get coordinates" });
+      logger.warn('registerRestaurant could not get coordinates', {
+        fullAddress,
+      });
+      return res.status(400).json({ message: 'Could not get coordinates' });
     }
 
     const restaurantAddress = {
@@ -87,7 +94,7 @@ module.exports.registerRestaurant = async (req, res) => {
       state: addressObj.state,
       pincode: addressObj.pincode,
       location: {
-        type: "Point",
+        type: 'Point',
         coordinates: [coordinates.longitude, coordinates.latitude],
       },
     };
@@ -99,214 +106,270 @@ module.exports.registerRestaurant = async (req, res) => {
       description,
       cuisineType,
       address: restaurantAddress,
-      image: req.file ? req.file.filename : "default-restaurant.jpeg"
+      image: req.file ? req.file.filename : 'default-restaurant.jpeg',
     });
 
     const token = newRestaurant.generateAuthToken();
 
-    res.cookie("jwt", token, {
+    res.cookie('jwt', token, {
       httpOnly: true,
       secure: false,
-      sameSite: "lax",
-      path: "/",
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    logger.info('Restaurant registered', {
+      restaurantId: newRestaurant._id,
+      email,
     });
 
     return res.status(201).json({
-      message: "Restaurant registered successfully",
+      message: 'Restaurant registered successfully',
       restaurant: newRestaurant,
       token,
     });
-  } catch (error) {
-    console.error('Registration error:', error);
-    return res.status(500).json({
-      message: "Server error during restaurant registration",
-      error: error.message,
+  } catch (err) {
+    logger.error('registerRestaurant failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+      body: req.body,
     });
+    next(err);
   }
 };
 
-module.exports.loginRestaurant = async (req, res) => {
+module.exports.loginRestaurant = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const restaurant = await Restaurant.findOne({ email }).select("+password");
+    const restaurant = await Restaurant.findOne({ email }).select('+password');
     if (!restaurant) {
-      return res.status(400).json({ message: "invalid email or password" });
+      logger.warn('loginRestaurant invalid credentials', { email });
+      return res.status(400).json({ message: 'Invalid email or password' });
     }
 
     const isMatch = await restaurant.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).json({ message: "invalid email or password" });
+      logger.warn('loginRestaurant invalid credentials', { email });
+      return res.status(400).json({ message: 'Invalid email or password' });
     }
 
     const token = restaurant.generateAuthToken();
-     res.cookie("jwt", token, {
+    res.cookie('jwt', token, {
       httpOnly: true,
-      secure: false, // true only in production (HTTPS)
-      sameSite: "lax", // or “none” if frontend is on different domain/port
-      path: "/",
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
     });
 
-    return res
-      .status(200)
-      .json({ message: "Login success", restaurant, token });
+    logger.info('Restaurant login success', {
+      restaurantId: restaurant._id,
+      email,
+    });
+
+    return res.status(200).json({ message: 'Login success', restaurant, token });
   } catch (err) {
-    return res
-      .status(400)
-      .json({ message: "error while login ! please try again" });
+    logger.error('loginRestaurant failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    next(err);
   }
 };
+
 module.exports.profile = async (req, res) => {
-  res
-    .status(200)
-    .json({ message: "From protected route", restaurant: req.restaurant });
+  try {
+    logger.info('Restaurant profile retrieved', {
+      restaurantId: req.restaurant._id,
+      email: req.restaurant.email,
+    });
+    return res.status(200).json({ message: 'From protected route', restaurant: req.restaurant });
+  } catch (err) {
+    logger.error('profile failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    throw err;
+  }
 };
 
-module.exports.search = async (req, res) => {
+module.exports.search = async (req, res, next) => {
   try {
     const query = req.query.query;
 
     if (!query) {
-      return res.status(400).json({ message: "query is required to search" });
+      logger.warn('search called without query');
+      return res.status(400).json({ message: 'query is required to search' });
     }
 
     const restaurantsByName = await Restaurant.find(
       { $text: { $search: query } },
-      { score: { $meta: "textScore" } }
-    ).sort({ score: { $meta: "textScore" } });
+      { score: { $meta: 'textScore' } },
+    ).sort({ score: { $meta: 'textScore' } });
 
     const menuItems = await MenuItem.find(
       { $text: { $search: query } },
-      { score: { $meta: "textScore" } }
+      { score: { $meta: 'textScore' } },
     )
-      .sort({ score: { $meta: "textScore" } })
-      .populate("restaurant");
+      .sort({ score: { $meta: 'textScore' } })
+      .populate('restaurant');
 
     const restaurantsFromMenu = [
-      ...new Map(
-        menuItems.map((item) => [item.restaurant._id, item.restaurant])
-      ).values(),
+      ...new Map(menuItems.map((item) => [item.restaurant._id, item.restaurant])).values(),
     ];
-
-    console.log(restaurantsFromMenu);
 
     const allRestaurants = [
       ...new Map(
-        [...restaurantsByName, ...restaurantsFromMenu].map((r) => [
-          r._id.toString(),
-          r,
-        ])
+        [...restaurantsByName, ...restaurantsFromMenu].map((r) => [r._id.toString(), r]),
       ).values(),
     ];
 
-    console.log(allRestaurants);
+    logger.info('search completed', { query, results: allRestaurants.length });
 
     return res.status(200).json({
       total: allRestaurants.length,
       restaurants: allRestaurants,
     });
   } catch (err) {
-    return res.status(500).json({ message: error.message });
+    logger.error('search failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    next(err);
   }
 };
 
-module.exports.getRestaurantDetails = async (req, res) => {
+module.exports.getRestaurantDetails = async (req, res, next) => {
   try {
     const restaurantId = req.params.id;
 
-    const restaurant = await Restaurant.findById(restaurantId)
-      .populate("menuItems"); // populate virtual field
+    const restaurant = await Restaurant.findById(restaurantId).populate('menuItems');
 
     if (!restaurant) {
-      return res.status(404).json({ message: "Restaurant not found" });
+      logger.warn('getRestaurantDetails not found', { restaurantId });
+      return res.status(404).json({ message: 'Restaurant not found' });
     }
 
     return res.status(200).json({
-      message: "Restaurant details fetched",
-      restaurant
+      message: 'Restaurant details fetched',
+      restaurant,
     });
-
   } catch (err) {
-    console.error("Error fetching restaurant details:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
+    logger.error('getRestaurantDetails failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    next(err);
   }
 };
 
-
 // To upload and resize user profile photo
-module.exports.updateRestaurant = upload.single("photo");
+module.exports.updateRestaurant = upload.single('photo');
 
 module.exports.resizeImage = async (req, res, next) => {
-  if (!req.file) return next();
+  try {
+    if (!req.file) return next();
 
-  req.file.filename = `restaurant-${req.restaurant._id}-${Date.now()}.jpeg`;
+    req.file.filename = `restaurant-${req.restaurant._id}-${Date.now()}.jpeg`;
 
-  sharp(req.file.buffer)
-    .resize(500, 500)
-    .toFormat("jpeg")
-    .jpeg({ quality: 90 })
-    .toFile(`public/img/restaurant/${req.file.filename}`);
+    await sharp(req.file.buffer)
+      .resize(500, 500)
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 })
+      .toFile(`public/img/restaurant/${req.file.filename}`);
 
-  next();
+    next();
+  } catch (err) {
+    logger.error('resizeImage failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    next(err);
+  }
 };
 
-module.exports.updateRestaurantProfilePhoto = async (req, res) => {
+module.exports.updateRestaurantProfilePhoto = async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: "please upload image" });
+      logger.warn('updateRestaurantProfilePhoto no file uploaded', {
+        restaurantId: req.restaurant?._id,
+      });
+      return res.status(400).json({ message: 'please upload image' });
     }
 
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       req.restaurant._id,
       { image: req.file.filename },
-      { new: true }
+      { new: true },
     );
 
+    logger.info('updateRestaurantProfilePhoto success', {
+      restaurantId: req.restaurant._id,
+    });
+
     return res.status(200).json({
-      message: "Restaurant photo updated",
+      message: 'Restaurant photo updated',
       restaurant: updatedRestaurant,
     });
   } catch (err) {
-    return res
-      .status(400)
-      .json9({ message: "error while adding restaurant picture" });
+    logger.error('updateRestaurantProfilePhoto failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    next(err);
   }
 };
 
-
-
-//Add menu items 
-
-module.exports.uploadMenuImage = upload.single("image");
+// Add menu items
+module.exports.uploadMenuImage = upload.single('image');
 
 module.exports.resizeMenuImage = async (req, res, next) => {
-  if (!req.file) return next();
+  try {
+    if (!req.file) return next();
 
-  req.file.filename = `menu-item-${req.restaurant._id}-${Date.now()}.jpeg`;
+    req.file.filename = `menu-item-${req.restaurant._id}-${Date.now()}.jpeg`;
 
-  await sharp(req.file.buffer)
-    .resize(800, 800)
-    .toFormat("jpeg")
-    .jpeg({ quality: 90 })
-    .toFile(`public/img/menuItems/${req.file.filename}`);
+    await sharp(req.file.buffer)
+      .resize(800, 800)
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 })
+      .toFile(`public/img/menuItems/${req.file.filename}`);
 
-  next();
+    next();
+  } catch (err) {
+    logger.error('resizeMenuImage failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    next(err);
+  }
 };
 
-module.exports.addMenuItem = async (req, res) => {
+module.exports.addMenuItem = async (req, res, next) => {
   try {
-    console.log("add menu call");
     const restaurantId = req.restaurant._id;
-
     const { name, description, price, isAvailable } = req.body;
 
     if (!name || !price) {
-      return res.status(400).json({ message: "Name and price are required" });
+      logger.warn('addMenuItem validation failed', {
+        restaurantId,
+        body: req.body,
+      });
+      return res.status(400).json({ message: 'Name and price are required' });
     }
 
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
-      return res.status(404).json({ message: "Restaurant not found" });
+      logger.warn('addMenuItem restaurant not found', { restaurantId });
+      return res.status(404).json({ message: 'Restaurant not found' });
     }
 
     const menuItem = await MenuItem.create({
@@ -314,221 +377,255 @@ module.exports.addMenuItem = async (req, res) => {
       name,
       description,
       price,
-      image: req.file ? req.file.filename : "default-food.jpeg",
+      image: req.file ? req.file.filename : 'default-food.jpeg',
       isAvailable: isAvailable ?? true,
     });
 
+    logger.info('addMenuItem created', {
+      restaurantId,
+      menuItemId: menuItem._id,
+    });
+
     res.status(201).json({
-      message: "Menu item created successfully",
+      message: 'Menu item created successfully',
       menuItem,
     });
-  } catch (error) {
-    console.error("Error adding menu item:", error);
-    res.status(500).json({ message: "Internal server error", error });
+  } catch (err) {
+    logger.error('addMenuItem failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    next(err);
   }
 };
 
-
-module.exports.getMenuItems = async (req, res) => {
+module.exports.getMenuItems = async (req, res, next) => {
   try {
-    console.log("get menu call");
     const restaurantId = req.restaurant._id;
     const menuItems = await MenuItem.find({ restaurant: restaurantId });
+    logger.info('getMenuItems fetched', {
+      restaurantId,
+      count: menuItems.length,
+    });
     res.status(200).json({ data: menuItems });
-  } catch (error) {
-    console.error("Error fetching menu items:", error);
-    res.status(500).json({ message: "Internal server error", error });
+  } catch (err) {
+    logger.error('getMenuItems failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    next(err);
   }
 };
 
-module.exports.deleteMenuItem = async (req, res) => {
+module.exports.deleteMenuItem = async (req, res, next) => {
   try {
     const menuItemId = req.params.id;
     const menuItem = await MenuItem.findByIdAndDelete(menuItemId);
     if (!menuItem) {
-      return res.status(404).json({ message: "Menu item not found" });
+      logger.warn('deleteMenuItem not found', { menuItemId });
+      return res.status(404).json({ message: 'Menu item not found' });
     }
-    return res.status(200).json({ message: "Menu item deleted successfully", menuItem });
-  } catch (error) {
-    console.error("Error deleting menu item:", error);
-    return res.status(500).json({ message: "Internal server error", error });
+    logger.info('deleteMenuItem success', { menuItemId });
+    return res.status(200).json({ message: 'Menu item deleted successfully', menuItem });
+  } catch (err) {
+    logger.error('deleteMenuItem failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    next(err);
   }
 };
 
-module.exports.logoutRestaurant = (req, res) => {
+module.exports.logoutRestaurant = (req, res, next) => {
   try {
-    // Clear the JWT cookie
-
-    res.clearCookie("jwt", {
+    res.clearCookie('jwt', {
       httpOnly: true,
       secure: false,
-      sameSite: "lax",
-      path: "/",
+      sameSite: 'lax',
+      path: '/',
     });
-    
+
+    logger.info('logoutRestaurant success', {
+      restaurantId: req.restaurant?._id,
+    });
+
     return res.status(200).json({ message: 'Logged out successfully' });
-  } catch (error) {
-    return res.status(500).json({ message: 'Logout failed', error: error.message });
+  } catch (err) {
+    logger.error('logoutRestaurant failed', {
+      message: err.message,
+      stack: err.stack,
+    });
+    next(err);
   }
-}; 
+};
 
-
-
-module.exports.getRestaurantOrders = async (req, res) => {
+module.exports.getRestaurantOrders = async (req, res, next) => {
   try {
     const restaurantId = req.restaurant._id;
-    
+
     const orders = await Order.find({ restaurant: restaurantId })
       .populate('user', 'fullname email')
       .populate('restaurant', 'name')
       .populate('items.menuItem', 'name image')
       .sort({ createdAt: -1 });
 
+    logger.info('getRestaurantOrders fetched', {
+      restaurantId,
+      count: orders.length,
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Orders fetched successfully',
       orders,
-      count: orders.length
+      count: orders.length,
     });
   } catch (err) {
-    console.error('Error fetching restaurant orders:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error'
+    logger.error('getRestaurantOrders failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
     });
+    next(err);
   }
 };
 
-module.exports.getRestaurantOrdersByStatus = async (req, res) => {
+module.exports.getRestaurantOrdersByStatus = async (req, res, next) => {
   try {
     const restaurantId = req.restaurant._id;
     const { status } = req.params;
 
-    if (!['pending', 'preparing', 'out for delivery', 'delivered'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status'
+    const validStatuses = ['pending', 'preparing', 'out for delivery', 'delivered'];
+    if (!validStatuses.includes(status)) {
+      logger.warn('getRestaurantOrdersByStatus invalid status', {
+        status,
+        restaurantId,
       });
+      return res.status(400).json({ success: false, message: 'Invalid status' });
     }
 
-    const orders = await Order.find({ 
-      restaurant: restaurantId, 
-      status: status 
-    })
+    const orders = await Order.find({ restaurant: restaurantId, status })
       .populate('user', 'fullname email')
       .populate('restaurant', 'name')
       .populate('items.menuItem', 'name image')
       .sort({ createdAt: -1 });
 
+    logger.info('getRestaurantOrdersByStatus fetched', {
+      restaurantId,
+      status,
+      count: orders.length,
+    });
+
     return res.status(200).json({
       success: true,
       message: `Orders with status ${status} fetched successfully`,
       orders,
-      count: orders.length
+      count: orders.length,
     });
   } catch (err) {
-    console.error('Error fetching orders by status:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error'
+    logger.error('getRestaurantOrdersByStatus failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
     });
+    next(err);
   }
 };
 
-module.exports.updateOrderStatus = async (req, res) => {
+module.exports.updateOrderStatus = async (req, res, next) => {
   try {
     const restaurantId = req.restaurant._id;
     const { orderId } = req.params;
     const { status } = req.body;
 
-    // Validate status
     const validStatuses = ['pending', 'preparing', 'out for delivery', 'delivered'];
     if (!validStatuses.includes(status)) {
+      logger.warn('updateOrderStatus invalid status', { status, restaurantId });
       return res.status(400).json({
         success: false,
-        message: 'Invalid status. Must be one of: pending, preparing, out for delivery, delivered'
+        message: 'Invalid status. Must be one of: pending, preparing, out for delivery, delivered',
       });
     }
 
-    // Check if order exists and belongs to this restaurant
-    const order = await Order.findOne({ 
-      _id: orderId, 
-      restaurant: restaurantId 
+    const order = await Order.findOne({
+      _id: orderId,
+      restaurant: restaurantId,
     });
 
     if (!order) {
+      logger.warn('updateOrderStatus order not found or not belong to restaurant', {
+        orderId,
+        restaurantId,
+      });
       return res.status(404).json({
         success: false,
-        message: 'Order not found or does not belong to your restaurant'
+        message: 'Order not found or does not belong to your restaurant',
       });
     }
 
-    // Update the order status
     order.status = status;
     await order.save();
 
-    // Populate the updated order
     const updatedOrder = await Order.findById(orderId)
       .populate('user', 'fullname email')
       .populate('restaurant', 'name')
       .populate('items.menuItem', 'name image');
 
+    logger.info('updateOrderStatus success', { orderId, status, restaurantId });
+
     return res.status(200).json({
       success: true,
       message: `Order status updated to ${status}`,
-      order: updatedOrder
+      order: updatedOrder,
     });
   } catch (err) {
-    console.error('Error updating order status:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error'
+    logger.error('updateOrderStatus failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
     });
+    next(err);
   }
 };
 
-module.exports.getOrderCounts = async (req, res) => {
+module.exports.getOrderCounts = async (req, res, next) => {
   try {
     const restaurantId = req.restaurant._id;
 
     const counts = await Order.aggregate([
-      { 
-        $match: { 
-          restaurant: new mongoose.Types.ObjectId(restaurantId) 
-        } 
-      },
-      { 
-        $group: { 
-          _id: '$status',
-          count: { $sum: 1 }
-        } 
-      }
+      { $match: { restaurant: new mongoose.Types.ObjectId(restaurantId) } },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
 
-    // Convert array to object
     const statusCounts = {};
-    counts.forEach(item => {
+    counts.forEach((item) => {
       statusCounts[item._id] = item.count;
     });
 
-    // Ensure all statuses are present
     const allStatuses = ['pending', 'preparing', 'out for delivery', 'delivered'];
-    allStatuses.forEach(status => {
-      if (!statusCounts[status]) {
-        statusCounts[status] = 0;
-      }
+    allStatuses.forEach((status) => {
+      if (!statusCounts[status]) statusCounts[status] = 0;
+    });
+
+    logger.info('getOrderCounts fetched', {
+      restaurantId,
+      counts: statusCounts,
     });
 
     return res.status(200).json({
       success: true,
       message: 'Order counts fetched successfully',
-      counts: statusCounts
+      counts: statusCounts,
     });
   } catch (err) {
-    console.error('Error getting order counts:', err);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error'
+    logger.error('getOrderCounts failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
     });
+    next(err);
   }
 };

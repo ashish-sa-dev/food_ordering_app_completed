@@ -26,12 +26,11 @@ const menuItemSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
-menuItemSchema.index({ 
+menuItemSchema.index({
   name: 'text',
-  description: 'text'
+  description: 'text',
 });
 
 module.exports = mongoose.model('MenuItem', menuItemSchema);
-

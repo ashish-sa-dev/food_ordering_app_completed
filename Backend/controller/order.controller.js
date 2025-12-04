@@ -1,13 +1,27 @@
-const Order = require("../models/order.model");
-const MenuItem = require("../models/menuItem.model");
+// controllers/order.controller.js
+const logger = require('../config/logger');
+const Order = require('../models/order.model');
+const MenuItem = require('../models/menuItem.model');
 
-module.exports.placeOrder = async (req, res) => {
+module.exports.placeOrder = async (req, res, next) => {
   try {
-    const userId = req.user._id; 
+    const userId = req.user._id;
     const { restaurant, items, deliveryAddress, paymentMethod } = req.body;
 
+    logger.info('placeOrder initiated', {
+      userId,
+      restaurantId: restaurant,
+      itemCount: items?.length,
+      paymentMethod,
+    });
+
     if (!restaurant || !items || items.length === 0) {
-      return res.status(400).json({ message: "Restaurant and items are required" });
+      logger.warn('placeOrder validation failed: missing restaurant or items', {
+        userId,
+        restaurant,
+        itemsCount: items?.length,
+      });
+      return res.status(400).json({ message: 'Restaurant and items are required' });
     }
 
     // Fetch menu items and calculate total
@@ -18,16 +32,20 @@ module.exports.placeOrder = async (req, res) => {
       const menu = await MenuItem.findById(item.menuItem);
 
       if (!menu) {
-        return res.status(404).json({ message: "Menu item not found" });
+        logger.warn('placeOrder: menu item not found', {
+          userId,
+          menuItemId: item.menuItem,
+        });
+        return res.status(404).json({ message: 'Menu item not found' });
       }
 
-      const price = menu.price;
-      totalAmount += price * item.quantity;
+      const price = menu.price || 0;
+      totalAmount += price * (item.quantity || 1);
 
       orderItems.push({
         menuItem: item.menuItem,
         quantity: item.quantity,
-        price: price
+        price: price,
       });
     }
 
@@ -37,36 +55,62 @@ module.exports.placeOrder = async (req, res) => {
       items: orderItems,
       totalAmount,
       deliveryAddress,
-      paymentMethod
+      paymentMethod,
+    });
+
+    logger.info('Order placed successfully', {
+      userId,
+      orderId: newOrder._id,
+      restaurantId: restaurant,
+      totalAmount,
+      itemCount: orderItems.length,
+      paymentMethod,
     });
 
     return res.status(201).json({
-      message: "Order placed successfully",
+      message: 'Order placed successfully',
       order: newOrder,
     });
-
   } catch (err) {
-    console.error("ORDER ERROR:", err);
-    res.status(500).json({ message: "Something went wrong" });
+    logger.error('placeOrder failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+      userId: req.user ? req.user._id : undefined,
+      body: req.body,
+    });
+    next(err);
   }
 };
 
-exports.getUserOrders = async (req, res) => {
+exports.getUserOrders = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
+    logger.info('getUserOrders initiated', { userId });
+
     const orders = await Order.find({ user: userId })
-      .populate("restaurant", "name image")
-      .populate("items.menuItem", "name image price")
+      .populate('restaurant', 'name image')
+      .populate('items.menuItem', 'name image price')
       .sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      message: "Orders fetched successfully",
-      orders
+    logger.info('User orders fetched successfully', {
+      userId,
+      orderCount: orders.length,
     });
 
+    return res.status(200).json({
+      message: 'Orders fetched successfully',
+      orders,
+      count: orders.length,
+    });
   } catch (err) {
-    console.error("ORDER HISTORY ERROR:", err);
-    res.status(500).json({ message: "Something went wrong" });
+    logger.error('getUserOrders failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+      userId: req.user ? req.user._id : undefined,
+    });
+    next(err);
   }
 };

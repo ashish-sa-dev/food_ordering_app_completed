@@ -1,16 +1,14 @@
 <div class="min-h-screen bg-[#F5EDE6] flex items-center justify-center p-4">
   <div class="w-full max-w-2xl bg-white rounded-2xl p-8 shadow-lg">
-    <h2 class="text-2xl font-bold text-center mb-6 text-[#3E2F2A]">
-      Create an Account
-    </h2>
+    <h2 class="text-2xl font-bold text-center mb-6 text-[#3E2F2A]">Create an Account</h2>
 
     <form class="space-y-4" [formGroup]="userForm" (ngSubmit)="onRegister()">
       <!-- Full Name -->
       <div>
         <label class="block mb-1 text-[#3E2F2A]">Full Name *</label>
-        <input 
+        <input
           formControlName="fullname"
-          type="text" 
+          type="text"
           class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
           placeholder="Enter your full name"
         />
@@ -22,9 +20,9 @@
       <!-- Email -->
       <div>
         <label class="block mb-1 text-[#3E2F2A]">Email *</label>
-        <input 
+        <input
           formControlName="email"
-          type="email" 
+          type="email"
           class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
           placeholder="Enter your email"
         />
@@ -36,7 +34,7 @@
       <!-- Password -->
       <div>
         <label class="block mb-1 text-[#3E2F2A]">Password *</label>
-        <input 
+        <input
           formControlName="password"
           type="password"
           class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
@@ -50,13 +48,13 @@
       <!-- Address Section -->
       <div class="border-t pt-6 mt-6">
         <h3 class="text-lg font-semibold text-[#3E2F2A] mb-4">Address Information *</h3>
-        
+
         <!-- Street -->
         <div class="mb-4">
           <label class="block mb-1 text-[#3E2F2A]">Street Address</label>
-          <input 
+          <input
             formControlName="street"
-            type="text" 
+            type="text"
             class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
             placeholder="Enter your street address"
           />
@@ -70,9 +68,9 @@
           <!-- City -->
           <div>
             <label class="block mb-1 text-[#3E2F2A]">City</label>
-            <input 
+            <input
               formControlName="city"
-              type="text" 
+              type="text"
               class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
               placeholder="City"
             />
@@ -84,7 +82,7 @@
           <!-- State -->
           <div>
             <label class="block mb-1 text-[#3E2F2A]">State</label>
-            <select 
+            <select
               formControlName="state"
               class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21] bg-white"
             >
@@ -106,9 +104,9 @@
           <!-- Pincode -->
           <div>
             <label class="block mb-1 text-[#3E2F2A]">Pincode</label>
-            <input 
+            <input
               formControlName="pincode"
-              type="text" 
+              type="text"
               class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9E2A21]"
               placeholder="Pincode"
               maxlength="6"
@@ -121,16 +119,32 @@
       </div>
 
       <!-- Register Button -->
-      <button 
+      <button
         type="submit"
         [disabled]="isLoading || userForm.invalid"
         class="w-full bg-[#9E2A21] hover:bg-[#8a241d] text-white p-3 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed mt-6"
       >
         @if (isLoading) {
           <span class="flex items-center justify-center">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <svg
+              class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
             </svg>
             Registering...
           </span>

@@ -5,7 +5,7 @@ import { RestaurantService } from '../../services/restaurant.service';
 import { AuthService } from '../../services/auth.restaurant.service';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-  
+
 interface MenuItem {
   _id?: string;
   name: string;
@@ -79,23 +79,25 @@ interface RestaurantProfile {
   selector: 'app-restaurant-home',
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './restaurant-home.html',
-  styleUrls: ['./restaurant-home.css']
+  styleUrls: ['./restaurant-home.css'],
 })
 export class RestaurantHome implements OnInit, OnDestroy {
   activeTab = signal<'menu' | 'orders'>('menu');
   showAddMenuForm = signal(false);
-  selectedOrderStatus = signal<'pending' | 'preparing' | 'out for delivery' | 'delivered'>('pending');
+  selectedOrderStatus = signal<'pending' | 'preparing' | 'out for delivery' | 'delivered'>(
+    'pending',
+  );
   showUserMenu = signal(false);
-  
+
   menuForm: FormGroup;
   menuItems = signal<MenuItem[]>([]);
   orders = signal<RestaurantOrder[]>([]);
   orderCounts = signal<Record<string, number>>({});
-  
+
   // Restaurant profile
   restaurantProfile = signal<RestaurantProfile | null>(null);
   isLoadingProfile = signal(true);
-  
+
   // Image upload signals
   menuImagePreview = signal<string | null>(null);
   menuDragOver = signal(false);
@@ -104,15 +106,19 @@ export class RestaurantHome implements OnInit, OnDestroy {
   isLoadingOrders = signal(false);
 
   // Update order statuses to match your API
-  orderStatuses: ('pending' | 'preparing' | 'out for delivery' | 'delivered')[] = 
-    ['pending', 'preparing', 'out for delivery', 'delivered'];
+  orderStatuses: ('pending' | 'preparing' | 'out for delivery' | 'delivered')[] = [
+    'pending',
+    'preparing',
+    'out for delivery',
+    'delivered',
+  ];
   private authSubscription: Subscription | undefined;
 
   constructor(
     private fb: FormBuilder,
     private restaurantService: RestaurantService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
   ) {
     this.menuForm = this.createMenuForm();
   }
@@ -123,18 +129,18 @@ export class RestaurantHome implements OnInit, OnDestroy {
       this.router.navigate(['/restaurant/login']);
       return;
     }
-    
+
     // Load restaurant profile
     this.loadRestaurantProfile();
-    
+
     // Load menu items
     this.loadMenuItems();
-    
+
     // Load order counts
     this.loadOrderCounts();
-    
+
     // Load orders for default status when orders tab is active
-    this.authSubscription = this.authService.isAuthenticated$.subscribe(isAuthenticated => {
+    this.authSubscription = this.authService.isAuthenticated$.subscribe((isAuthenticated) => {
       if (!isAuthenticated) {
         this.router.navigate(['/restaurant/login']);
       }
@@ -150,9 +156,9 @@ export class RestaurantHome implements OnInit, OnDestroy {
   // Load restaurant profile from backend
   private loadRestaurantProfile(): void {
     this.isLoadingProfile.set(true);
-    
+
     const storedData = this.authService.getRestaurantData();
-    
+
     if (storedData) {
       this.restaurantProfile.set(storedData);
       this.isLoadingProfile.set(false);
@@ -165,7 +171,7 @@ export class RestaurantHome implements OnInit, OnDestroy {
   private loadOrdersByStatus(status: string): void {
     this.isLoadingOrders.set(true);
     this.orders.set([]);
-    
+
     this.restaurantService.getOrdersByStatus(status).subscribe({
       next: (response: any) => {
         if (response.success && response.orders) {
@@ -174,10 +180,9 @@ export class RestaurantHome implements OnInit, OnDestroy {
         this.isLoadingOrders.set(false);
       },
       error: (error) => {
-        console.error('Error loading orders:', error);
         this.isLoadingOrders.set(false);
         alert('Failed to load orders. Please try again.');
-      }
+      },
     });
   }
 
@@ -189,14 +194,15 @@ export class RestaurantHome implements OnInit, OnDestroy {
           this.orderCounts.set(response.counts);
         }
       },
-      error: (error) => {
-        console.error('Error loading order counts:', error);
-      }
+      error: (error) => {},
     });
   }
 
   // Update order status via API
-  updateOrderStatus(orderId: string, newStatus: 'preparing' | 'out for delivery' | 'delivered'): void {
+  updateOrderStatus(
+    orderId: string,
+    newStatus: 'preparing' | 'out for delivery' | 'delivered',
+  ): void {
     if (!confirm(`Are you sure you want to change this order to "${newStatus}"?`)) {
       return;
     }
@@ -205,29 +211,26 @@ export class RestaurantHome implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response.success) {
           // Update the order in the list
-          this.orders.update(orders =>
-            orders.map(order =>
-              order._id === orderId ? { ...order, status: newStatus } : order
-            )
+          this.orders.update((orders) =>
+            orders.map((order) =>
+              order._id === orderId ? { ...order, status: newStatus } : order,
+            ),
           );
-          
+
           // Reload order counts
           this.loadOrderCounts();
-          
+
           // If current status changed, remove from list
           if (this.selectedOrderStatus() !== newStatus) {
-            this.orders.update(orders => 
-              orders.filter(order => order._id !== orderId)
-            );
+            this.orders.update((orders) => orders.filter((order) => order._id !== orderId));
           }
-          
+
           alert(`Order status updated to ${newStatus}`);
         }
       },
       error: (error) => {
-        console.error('Error updating order status:', error);
         alert(error.error?.message || 'Failed to update order status');
-      }
+      },
     });
   }
 
@@ -273,7 +276,9 @@ export class RestaurantHome implements OnInit, OnDestroy {
   // Get pending orders count for the badge
   getPendingOrdersCount(): number {
     const counts = this.orderCounts();
-    return (counts['pending'] || 0) + (counts['preparing'] || 0) + (counts['out for delivery'] || 0);
+    return (
+      (counts['pending'] || 0) + (counts['preparing'] || 0) + (counts['out for delivery'] || 0)
+    );
   }
 
   // Get orders count by status
@@ -298,27 +303,25 @@ export class RestaurantHome implements OnInit, OnDestroy {
   }
 
   toggleUserMenu(): void {
-    this.showUserMenu.update(prev => !prev);
+    this.showUserMenu.update((prev) => !prev);
   }
 
   logout(): void {
     this.restaurantService.logoutRestaurant().subscribe({
-      next:()=>{
-        localStorage.removeItem('restaurant_token');
-        localStorage.removeItem('restaurant_id');
-        localStorage.removeItem('restaurant_data');
-        console.log("success remove cookie")
-        this.router.navigate(['/restaurant/login']);
-    },
-    error: (error) => {
-        console.error('Logout error:', error);
+      next: () => {
         localStorage.removeItem('restaurant_token');
         localStorage.removeItem('restaurant_id');
         localStorage.removeItem('restaurant_data');
         this.router.navigate(['/restaurant/login']);
-      }
+      },
+      error: (error) => {
+        localStorage.removeItem('restaurant_token');
+        localStorage.removeItem('restaurant_id');
+        localStorage.removeItem('restaurant_data');
+        this.router.navigate(['/restaurant/login']);
+      },
     });
-    
+
     this.showUserMenu.set(false);
   }
 
@@ -327,7 +330,7 @@ export class RestaurantHome implements OnInit, OnDestroy {
       name: ['', [Validators.required, Validators.minLength(2)]],
       description: ['', [Validators.required, Validators.minLength(10)]],
       price: ['', [Validators.required, Validators.min(1)]],
-      image: ['', Validators.required]
+      image: ['', Validators.required],
     });
   }
 
@@ -336,16 +339,17 @@ export class RestaurantHome implements OnInit, OnDestroy {
       next: (response: any) => {
         this.menuItems.set(response.menuItems || response.data || []);
       },
-      error: (error) => {
-        console.error('Error loading menu items:', error);
-      }
+      error: (error) => {},
     });
   }
 
   // Helper to get full image URL
   getImageUrl(imageName: string | undefined): string {
     if (!imageName || imageName.includes('http')) {
-      return imageName || 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?auto=format&fit=crop&w=800&q=60';
+      return (
+        imageName ||
+        'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?auto=format&fit=crop&w=800&q=60'
+      );
     }
     return `http://localhost:5000/img/menuItems/${imageName}`;
   }
@@ -358,11 +362,11 @@ export class RestaurantHome implements OnInit, OnDestroy {
 
   formatFullDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
   }
 
@@ -377,8 +381,9 @@ export class RestaurantHome implements OnInit, OnDestroy {
 
   // UI Helper methods
   getNavClass(tab: string): string {
-    const baseClass = "flex items-center px-4 py-2 rounded-2xl font-semibold transition-all duration-200";
-    return this.activeTab() === tab 
+    const baseClass =
+      'flex items-center px-4 py-2 rounded-2xl font-semibold transition-all duration-200';
+    return this.activeTab() === tab
       ? `${baseClass} bg-orange-500 text-white`
       : `${baseClass} text-gray-600 hover:text-orange-500 hover:bg-orange-50`;
   }
@@ -408,7 +413,7 @@ export class RestaurantHome implements OnInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     this.menuDragOver.set(false);
-    
+
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
       const file = files[0];
@@ -434,7 +439,7 @@ export class RestaurantHome implements OnInit, OnDestroy {
     reader.onload = () => {
       this.menuImagePreview.set(reader.result as string);
       this.menuForm.patchValue({
-        image: 'selected'
+        image: 'selected',
       });
       this.menuForm.get('image')?.markAsTouched();
     };
@@ -445,7 +450,7 @@ export class RestaurantHome implements OnInit, OnDestroy {
     this.menuImagePreview.set(null);
     this.selectedMenuFile = null;
     this.menuForm.patchValue({
-      image: ''
+      image: '',
     });
     this.menuForm.get('image')?.markAsTouched();
   }
@@ -461,14 +466,14 @@ export class RestaurantHome implements OnInit, OnDestroy {
     const formValid = this.menuForm.valid;
     const hasFile = !!this.selectedMenuFile;
     const notLoading = !this.isLoading();
-    
+
     return formValid && hasFile && notLoading;
   }
 
   addMenuItem(): void {
     if (!this.isMenuFormReady) {
       this.markFormGroupTouched(this.menuForm);
-      
+
       if (!this.selectedMenuFile) {
         alert('Please upload an image for the menu item');
       }
@@ -478,7 +483,7 @@ export class RestaurantHome implements OnInit, OnDestroy {
     this.isLoading.set(true);
 
     const formData = new FormData();
-    
+
     formData.append('name', this.menuForm.get('name')?.value);
     formData.append('description', this.menuForm.get('description')?.value);
     formData.append('price', this.menuForm.get('price')?.value);
@@ -487,75 +492,70 @@ export class RestaurantHome implements OnInit, OnDestroy {
     this.restaurantService.addMenuItem(formData).subscribe({
       next: (response: any) => {
         this.isLoading.set(false);
-        
+
         if (response.menuItem) {
-          this.menuItems.update(items => [...items, response.menuItem]);
+          this.menuItems.update((items) => [...items, response.menuItem]);
         }
-        
+
         this.cancelAddMenuForm();
         this.showAddMenuForm.set(false);
-        
+
         alert('Menu item added successfully!');
       },
       error: (error) => {
         this.isLoading.set(false);
-        
+
         let errorMessage = 'Failed to add menu item. Please try again.';
         if (error.error?.message) {
           errorMessage = error.error.message;
         } else if (error.status === 400) {
           errorMessage = 'Invalid data. Please check your input';
         }
-        
+
         alert(errorMessage);
-      }
+      },
     });
   }
 
   toggleAvailability(itemId: string | undefined): void {
     if (!itemId) return;
-    
-    const item = this.menuItems().find(i => i._id === itemId);
+
+    const item = this.menuItems().find((i) => i._id === itemId);
     if (!item) return;
-    
+
     const newAvailability = !item.isAvailable;
-    
+
     this.restaurantService.updateMenuItemAvailability(itemId, newAvailability).subscribe({
       next: (response: any) => {
-        this.menuItems.update(items =>
-          items.map(i =>
-            i._id === itemId ? { ...i, isAvailable: newAvailability } : i
-          )
+        this.menuItems.update((items) =>
+          items.map((i) => (i._id === itemId ? { ...i, isAvailable: newAvailability } : i)),
         );
-        console.log('Availability updated:', response);
       },
       error: (error) => {
-        console.error('Error updating availability:', error);
         alert('Failed to update availability. Please try again.');
-      }
+      },
     });
   }
 
   deleteMenuItem(itemId: string | undefined): void {
     if (!itemId) return;
-    
+
     if (confirm('Are you sure you want to delete this menu item?')) {
       this.restaurantService.deleteMenuItem(itemId).subscribe({
         next: (response: any) => {
-          this.menuItems.update(items => items.filter(i => i._id !== itemId));
-          console.log('Menu item deleted:', response);
+          this.menuItems.update((items) => items.filter((i) => i._id !== itemId));
+
           alert('Menu item deleted successfully!');
         },
         error: (error) => {
-          console.error('Error deleting menu item:', error);
           alert('Failed to delete menu item. Please try again.');
-        }
+        },
       });
     }
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {
-    Object.values(formGroup.controls).forEach(control => {
+    Object.values(formGroup.controls).forEach((control) => {
       control.markAsTouched();
       if (control instanceof FormGroup) {
         this.markFormGroupTouched(control);

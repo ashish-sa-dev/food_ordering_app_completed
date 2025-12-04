@@ -1,6 +1,12 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+  AbstractControl,
+} from '@angular/forms';
 import { RestaurantService } from '../../services/restaurant.service';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.restaurant.service';
@@ -9,7 +15,7 @@ import { AuthService } from '../../services/auth.restaurant.service';
   selector: 'app-restaurant-register',
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './restaurant-register.html',
-  styleUrls: ['./restaurant-register.css']
+  styleUrls: ['./restaurant-register.css'],
 })
 export class RestaurantRegister {
   registrationForm: FormGroup;
@@ -23,7 +29,7 @@ export class RestaurantRegister {
     private fb: FormBuilder,
     private restaurantService: RestaurantService,
     private router: Router,
-    private authService: AuthService, 
+    private authService: AuthService,
   ) {
     this.registrationForm = this.createForm();
   }
@@ -39,8 +45,8 @@ export class RestaurantRegister {
         street: ['', Validators.required],
         city: ['', Validators.required],
         state: ['Gujarat', Validators.required],
-        pincode: ['', [Validators.required, Validators.pattern('^[0-9]{6}$')]]
-      })
+        pincode: ['', [Validators.required, Validators.pattern('^[0-9]{6}$')]],
+      }),
     });
   }
 
@@ -72,7 +78,7 @@ export class RestaurantRegister {
     event.preventDefault();
     event.stopPropagation();
     this.isDragOver.set(false);
-    
+
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
       const file = files[0];
@@ -115,15 +121,15 @@ export class RestaurantRegister {
 
   onSubmit(): void {
     this.formSubmitted.set(true);
-    
+
     // Mark all fields as touched to show validation errors
     this.markFormGroupTouched(this.registrationForm);
-    
+
     if (!this.registrationForm.valid) {
       alert('Please fill all required fields correctly');
       return;
     }
-    
+
     if (!this.selectedFile) {
       alert('Please upload a restaurant image');
       return;
@@ -133,42 +139,34 @@ export class RestaurantRegister {
 
     // Prepare the data object exactly as backend expects
     const formData = new FormData();
-    
+
     // Append simple fields
     formData.append('name', this.registrationForm.get('name')?.value);
     formData.append('email', this.registrationForm.get('email')?.value);
     formData.append('password', this.registrationForm.get('password')?.value);
     formData.append('description', this.registrationForm.get('description')?.value);
     formData.append('cuisineType', this.registrationForm.get('cuisineType')?.value);
-    
+
     // Append address as JSON string
     const address = this.addressFormGroup.value;
     formData.append('address', JSON.stringify(address));
-    
+
     // Append image file - IMPORTANT: field name must be "photo"
     formData.append('photo', this.selectedFile);
-
-    console.log('Form Data:', {
-      name: this.registrationForm.get('name')?.value,
-      email: this.registrationForm.get('email')?.value,
-      address: address,
-      hasFile: !!this.selectedFile
-    });
 
     this.restaurantService.registerRestaurant(formData).subscribe({
       next: (response: any) => {
         this.isLoading.set(false);
-        console.log('Restaurant registered successfully:', response);
+
         this.authService.register(response.restaurant, response.token);
         alert('Restaurant registered successfully! Welcome to our platform!');
-        
+
         // Redirect to login
         this.router.navigate(['/restaurant/home']);
       },
       error: (error) => {
         this.isLoading.set(false);
-        console.error('Registration error:', error);
-        
+
         let errorMessage = 'Registration failed. Please try again.';
         if (error.error?.message) {
           errorMessage = error.error.message;
@@ -177,17 +175,17 @@ export class RestaurantRegister {
         } else if (error.status === 400) {
           errorMessage = 'Invalid data. Please check your input';
         }
-        
+
         alert(errorMessage);
       },
       complete: () => {
         this.isLoading.set(false);
-      }
+      },
     });
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {
-    Object.values(formGroup.controls).forEach(control => {
+    Object.values(formGroup.controls).forEach((control) => {
       control.markAsTouched();
       if (control instanceof FormGroup) {
         this.markFormGroupTouched(control);
@@ -198,12 +196,16 @@ export class RestaurantRegister {
   // Helper method to check if field has error
   hasError(controlName: string, errorName: string): boolean {
     const control = this.registrationForm.get(controlName);
-    return control ? control.hasError(errorName) && (control.touched || this.formSubmitted()) : false;
+    return control
+      ? control.hasError(errorName) && (control.touched || this.formSubmitted())
+      : false;
   }
 
   // Helper method to check if address field has error
   hasAddressError(controlName: string, errorName: string): boolean {
     const control = this.addressFormGroup.get(controlName);
-    return control ? control.hasError(errorName) && (control.touched || this.formSubmitted()) : false;
+    return control
+      ? control.hasError(errorName) && (control.touched || this.formSubmitted())
+      : false;
   }
 }

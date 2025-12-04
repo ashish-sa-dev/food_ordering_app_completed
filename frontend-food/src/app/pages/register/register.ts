@@ -4,6 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { Subscription } from 'rxjs';
+import { LoggerService } from '../../core/services/logger.service';
 
 @Component({
   selector: 'app-register',
@@ -15,8 +16,9 @@ export class Register implements OnDestroy {
   private userService = inject(UserService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private logger = inject(LoggerService);
   private regSub?: Subscription;
-  
+
   isLoading = false;
   errorMessage = '';
   formSubmitted = false;
@@ -28,19 +30,15 @@ export class Register implements OnDestroy {
     street: new FormControl('', [Validators.required]),
     city: new FormControl('', [Validators.required]),
     state: new FormControl('', [Validators.required]),
-    pincode: new FormControl('', [
-      Validators.required, 
-      Validators.pattern('^[0-9]{6}$') // 6 digit pincode validation
-    ])
+    pincode: new FormControl('', [Validators.required, Validators.pattern('^[0-9]{6}$')]),
   });
 
   onRegister() {
     this.formSubmitted = true;
-    
-    // Mark all fields as touched to show validation errors
     this.markFormGroupTouched(this.userForm);
-    
+
     if (this.userForm.invalid) {
+      this.logger.warn('Register form submitted with invalid data');
       alert('Please fill all required fields correctly');
       return;
     }
@@ -48,7 +46,6 @@ export class Register implements OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
 
-    // Get form values with proper type checking
     const fullname = this.userForm.get('fullname')?.value;
     const email = this.userForm.get('email')?.value;
     const password = this.userForm.get('password')?.value;
@@ -57,14 +54,16 @@ export class Register implements OnDestroy {
     const state = this.userForm.get('state')?.value;
     const pincode = this.userForm.get('pincode')?.value;
 
-    // Validate all required fields exist
     if (!fullname || !email || !password || !street || !city || !state || !pincode) {
+      this.logger.warn('Register attempt with missing fields');
       this.errorMessage = 'Please fill all required fields';
       this.isLoading = false;
       return;
     }
 
-    // Create user data object matching backend expectations
+    // ✅ NEVER log passwords
+    this.logger.info('User registration started', { email });
+
     const userData = {
       fullname,
       email,
@@ -72,75 +71,74 @@ export class Register implements OnDestroy {
       street,
       city,
       state,
-      pincode
+      pincode,
     };
 
-    console.log('Registering user:', userData);
-
-    // Use UserService instead of direct HTTP call
     this.regSub = this.userService.registerUser(userData).subscribe({
       next: (res: any) => {
         this.isLoading = false;
-        
-        // Check if registration was successful
+
         if (res.message === 'User registered successfully') {
+          this.logger.info('Registration successful', { email });
+
           alert('Registration successful!');
-          
-          // After successful registration, we need to login the user
-          // Since backend doesn't return user data on register, we need to login
           this.loginAfterRegistration(email, password);
         } else {
-          this.errorMessage = res.message || 'Registration completed but with unexpected response';
+          this.logger.warn('Unexpected registration response', res);
+          this.errorMessage = res.message || 'Registration completed with unexpected response';
           alert(this.errorMessage);
         }
       },
+
       error: (error) => {
         this.isLoading = false;
-        
+
         if (error.status === 400) {
+          this.logger.warn('Registration failed: Invalid input', error);
           this.errorMessage = error.error?.message || 'Invalid registration data';
         } else if (error.status === 409) {
+          this.logger.warn('Registration failed: User already exists', { email });
           this.errorMessage = 'User with this email already exists';
         } else if (error.status === 500) {
+          this.logger.error('Registration failed: Server error', error);
           this.errorMessage = 'Server error. Please try again later.';
         } else {
+          this.logger.error('Registration failed: Unknown error', error);
           this.errorMessage = 'Registration failed. Please try again.';
         }
-        
+
         alert(this.errorMessage);
-        console.error('Registration error:', error);
-      }
+      },
     });
   }
 
-  // Helper method to login user after successful registration
   private loginAfterRegistration(email: string, password: string) {
+    this.logger.info('Auto-login after successful registration started', { email });
+
     this.userService.loginUser({ email, password }).subscribe({
       next: (loginRes: any) => {
-        // Assuming backend returns { token: '...', user: {...} }
         if (loginRes.token && loginRes.user) {
-          // Set authentication state
+          this.logger.info('Auto-login successful after registration', { email });
+
           this.authService.login(loginRes.user, loginRes.token);
-          console.log('User registered and logged in successfully');
-          
-          // Redirect to home page
           this.router.navigate(['/']);
         } else {
-          // Registration successful but login failed
-          alert('Registration successful! Please login with your credentials.');
+          this.logger.warn('Auto-login failed after registration');
+          alert('Registration successful! Please login manually.');
           this.router.navigate(['/login']);
         }
       },
+
       error: (loginError) => {
-        console.error('Auto-login after registration failed:', loginError);
-        alert('Registration successful! Please login with your credentials.');
+        this.logger.error('Auto-login error after registration', loginError);
+        alert('Registration successful! Please login manually.');
         this.router.navigate(['/login']);
-      }
+      },
     });
   }
 
   private markFormGroupTouched(formGroup: FormGroup) {
-    Object.values(formGroup.controls).forEach(control => {
+    Object.values(formGroup.controls).forEach((control) => {
       control.markAsTouched();
       if (control instanceof FormGroup) {
         this.markFormGroupTouched(control);
@@ -148,7 +146,6 @@ export class Register implements OnDestroy {
     });
   }
 
-  // Helper methods for template validation
   hasError(controlName: string, errorName: string): boolean {
     const control = this.userForm.get(controlName);
     return control ? control.hasError(errorName) && (control.touched || this.formSubmitted) : false;
@@ -156,5 +153,6 @@ export class Register implements OnDestroy {
 
   ngOnDestroy(): void {
     this.regSub?.unsubscribe();
+    this.logger.info('Register component destroyed, subscription cleaned');
   }
 }

@@ -15,8 +15,8 @@
         type="text"
         placeholder="Search for restaurants or dishes"
         class="flex-1 px-5 py-3 focus:outline-none"
-          [(ngModel)]="searchText"
-    (keyup.enter)="onSearch()"
+        [(ngModel)]="searchText"
+        (keyup.enter)="onSearch()"
       />
       <button class="bg-red-700 text-white px-6 py-3" (click)="onSearch()">
         <i class="fas fa-search"></i>

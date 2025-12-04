@@ -12,16 +12,15 @@ import { AuthGuard } from './services/auth.restaurant.guard';
 import { AuthGuard as userAuthGuard } from './services/auth.guard';
 import { Orders } from './pages/orders/orders';
 
-
 export const routes: Routes = [
-    {path:'login',component:Login},
-    { path: 'restaurant/login', component: RestaurantLogin },
-    { path: 'restaurant/home', component: RestaurantHome, canActivate: [AuthGuard]  },
-    {path:'forgot-password',component:ForgotPassword},
-    {path:'register',component:Register},
-        {path:'restaurant/register',component:RestaurantRegister},
-        {path:'restaurant/:id',component:Restaurant},
-        { path: 'cart', component: Cart ,canActivate: [userAuthGuard]},
-        { path: 'checkout', component: Checkout ,canActivate: [userAuthGuard]},
-        {path:'orders',component:Orders,canActivate: [userAuthGuard]}
+  { path: 'login', component: Login },
+  { path: 'restaurant/login', component: RestaurantLogin },
+  { path: 'restaurant/home', component: RestaurantHome, canActivate: [AuthGuard] },
+  { path: 'forgot-password', component: ForgotPassword },
+  { path: 'register', component: Register },
+  { path: 'restaurant/register', component: RestaurantRegister },
+  { path: 'restaurant/:id', component: Restaurant },
+  { path: 'cart', component: Cart, canActivate: [userAuthGuard] },
+  { path: 'checkout', component: Checkout, canActivate: [userAuthGuard] },
+  { path: 'orders', component: Orders, canActivate: [userAuthGuard] },
 ];
