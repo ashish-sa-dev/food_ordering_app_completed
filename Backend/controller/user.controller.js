@@ -124,7 +124,20 @@ module.exports.loginUser = async (req, res, next) => {
 };
 
 module.exports.getUserProfile = async (req, res) => {
-  return res.status(200).json({ message: 'User profile retrieved successfully', user: req.user });
+  try {
+    logger.info('User profile retrieved', {
+      userId: req.user._id,
+      email: req.user.email,
+    });
+    return res.status(200).json({ message: 'User profile retrieved successfully', user: req.user });
+  } catch (err) {
+    logger.error('getUserProfile failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    throw err;
+  }
 };
 
 module.exports.getAllusers = async (req, res, next) => {

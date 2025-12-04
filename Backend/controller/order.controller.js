@@ -8,10 +8,18 @@ module.exports.placeOrder = async (req, res, next) => {
     const userId = req.user._id;
     const { restaurant, items, deliveryAddress, paymentMethod } = req.body;
 
+    logger.info('placeOrder initiated', {
+      userId,
+      restaurantId: restaurant,
+      itemCount: items?.length,
+      paymentMethod,
+    });
+
     if (!restaurant || !items || items.length === 0) {
-      logger.warn('placeOrder: missing restaurant or items', {
+      logger.warn('placeOrder validation failed: missing restaurant or items', {
         userId,
-        body: req.body,
+        restaurant,
+        itemsCount: items?.length,
       });
       return res.status(400).json({ message: 'Restaurant and items are required' });
     }
@@ -53,8 +61,10 @@ module.exports.placeOrder = async (req, res, next) => {
     logger.info('Order placed successfully', {
       userId,
       orderId: newOrder._id,
-      restaurant,
+      restaurantId: restaurant,
       totalAmount,
+      itemCount: orderItems.length,
+      paymentMethod,
     });
 
     return res.status(201).json({
@@ -66,7 +76,7 @@ module.exports.placeOrder = async (req, res, next) => {
       message: err.message,
       stack: err.stack,
       route: req.originalUrl,
-      user: req.user ? req.user._id : undefined,
+      userId: req.user ? req.user._id : undefined,
       body: req.body,
     });
     next(err);
@@ -77,23 +87,29 @@ exports.getUserOrders = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
+    logger.info('getUserOrders initiated', { userId });
+
     const orders = await Order.find({ user: userId })
       .populate('restaurant', 'name image')
       .populate('items.menuItem', 'name image price')
       .sort({ createdAt: -1 });
 
-    logger.info('Fetched user orders', { userId, count: orders.length });
+    logger.info('User orders fetched successfully', {
+      userId,
+      orderCount: orders.length,
+    });
 
     return res.status(200).json({
       message: 'Orders fetched successfully',
       orders,
+      count: orders.length,
     });
   } catch (err) {
     logger.error('getUserOrders failed', {
       message: err.message,
       stack: err.stack,
       route: req.originalUrl,
-      user: req.user ? req.user._id : undefined,
+      userId: req.user ? req.user._id : undefined,
     });
     next(err);
   }

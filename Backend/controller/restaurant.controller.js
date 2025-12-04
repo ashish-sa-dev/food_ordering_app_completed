@@ -180,8 +180,20 @@ module.exports.loginRestaurant = async (req, res, next) => {
 };
 
 module.exports.profile = async (req, res) => {
-  // protected route => no try/catch needed; if something throws it will bubble to global handler
-  return res.status(200).json({ message: 'From protected route', restaurant: req.restaurant });
+  try {
+    logger.info('Restaurant profile retrieved', {
+      restaurantId: req.restaurant._id,
+      email: req.restaurant.email,
+    });
+    return res.status(200).json({ message: 'From protected route', restaurant: req.restaurant });
+  } catch (err) {
+    logger.error('profile failed', {
+      message: err.message,
+      stack: err.stack,
+      route: req.originalUrl,
+    });
+    throw err;
+  }
 };
 
 module.exports.search = async (req, res, next) => {

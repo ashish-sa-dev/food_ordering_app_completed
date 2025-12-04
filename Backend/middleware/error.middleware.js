@@ -1,6 +1,7 @@
 // Backend/middleware/error.middleware.js
 const logger = require('../config/logger');
 
+// eslint-disable-next-line no-unused-vars
 module.exports = (err, req, res, next) => {
   // Standardize error shape
   const status = err.statusCode || 500;
